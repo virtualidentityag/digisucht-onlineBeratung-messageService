@@ -7,6 +7,7 @@ import static de.caritas.cob.messageservice.api.authorization.Authority.Authorit
 import static de.caritas.cob.messageservice.api.authorization.Authority.AuthorityValue.USE_FEEDBACK;
 
 import de.caritas.cob.messageservice.api.authorization.RoleAuthorizationAuthorityMapper;
+import de.caritas.cob.messageservice.filter.PerformanceMonitoringFilter;
 import de.caritas.cob.messageservice.filter.StatelessCsrfFilter;
 import org.keycloak.adapters.KeycloakConfigResolver;
 import org.keycloak.adapters.springboot.KeycloakSpringBootConfigResolver;
@@ -47,6 +48,11 @@ public class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
   @Value("${csrf.whitelist.header.property}")
   private String csrfWhitelistHeaderProperty;
 
+  @Value("${sentry.peformance.monitoring.enabled:false}")
+  private boolean performanceMonitoringEnabled;
+
+
+
   /**
    * Processes HTTP requests and checks for a valid spring security authentication for the
    * (Keycloak) principal (authorization header).
@@ -68,7 +74,7 @@ public class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
     final var SINGLE_MESSAGE_PATH = "/messages/{messageId:[0-9A-Za-z]{17}}";
     http.csrf().disable()
         .addFilterBefore(new StatelessCsrfFilter(csrfCookieProperty, csrfHeaderProperty,
-                csrfWhitelistHeaderProperty), CsrfFilter.class)
+            csrfWhitelistHeaderProperty), CsrfFilter.class)
         .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
         .sessionAuthenticationStrategy(sessionAuthenticationStrategy()).and().authorizeRequests()
         .antMatchers(SpringFoxConfig.WHITE_LIST).permitAll()
@@ -92,6 +98,9 @@ public class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
         .hasAnyAuthority(USER_DEFAULT, CONSULTANT_DEFAULT, TECHNICAL_DEFAULT)
         .anyRequest()
         .denyAll();
+    if (performanceMonitoringEnabled) {
+      http.addFilterBefore(new PerformanceMonitoringFilter(), CsrfFilter.class);
+    }
   }
 
   /**

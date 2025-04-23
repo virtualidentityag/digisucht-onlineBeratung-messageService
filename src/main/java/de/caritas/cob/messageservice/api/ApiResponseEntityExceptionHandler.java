@@ -7,6 +7,7 @@ import de.caritas.cob.messageservice.api.exception.KeycloakException;
 import de.caritas.cob.messageservice.api.exception.NoMasterKeyException;
 import de.caritas.cob.messageservice.api.exception.RocketChatBadRequestException;
 import de.caritas.cob.messageservice.api.service.LogService;
+import io.sentry.Sentry;
 import java.net.UnknownHostException;
 import javax.validation.ConstraintViolationException;
 import lombok.NoArgsConstructor;
@@ -46,7 +47,7 @@ public class ApiResponseEntityExceptionHandler extends ResponseEntityExceptionHa
   public ResponseEntity<Object> handleBadRequest(
       final RuntimeException ex, final WebRequest request) {
     LogService.logWarning(ex);
-
+    Sentry.captureException(ex);
     return handleExceptionInternal(null, null, new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
   }
 
@@ -98,7 +99,7 @@ public class ApiResponseEntityExceptionHandler extends ResponseEntityExceptionHa
   protected ResponseEntity<Object> handleConflict(
       final RuntimeException ex, final WebRequest request) {
     LogService.logWarning(HttpStatus.CONFLICT, ex);
-
+    Sentry.captureException(ex);
     return handleExceptionInternal(null, null, new HttpHeaders(), HttpStatus.CONFLICT, request);
   }
 
@@ -112,7 +113,7 @@ public class ApiResponseEntityExceptionHandler extends ResponseEntityExceptionHa
   protected ResponseEntity<Object> handleHttpClientException(
       final HttpClientErrorException ex, final WebRequest request) {
     LogService.logWarning(ex.getStatusCode(), ex);
-
+    Sentry.captureException(ex);
     return handleExceptionInternal(null, null, new HttpHeaders(), ex.getStatusCode(), request);
   }
 
@@ -128,7 +129,7 @@ public class ApiResponseEntityExceptionHandler extends ResponseEntityExceptionHa
   public ResponseEntity<Object> handleInternal(
       final RuntimeException ex, final WebRequest request) {
     LogService.logInternalServerError(ex);
-
+    Sentry.captureException(ex);
     return handleExceptionInternal(
         null, null, new HttpHeaders(), HttpStatus.INTERNAL_SERVER_ERROR, request);
   }
@@ -143,7 +144,7 @@ public class ApiResponseEntityExceptionHandler extends ResponseEntityExceptionHa
   public ResponseEntity<Object> handleInternal(
       final InternalServerErrorException ex, final WebRequest request) {
     ex.executeLogging();
-
+    Sentry.captureException(ex);
     return handleExceptionInternal(
         null, null, new HttpHeaders(), HttpStatus.INTERNAL_SERVER_ERROR, request);
   }
@@ -158,7 +159,7 @@ public class ApiResponseEntityExceptionHandler extends ResponseEntityExceptionHa
   public ResponseEntity<Object> handleInternal(
       final BadRequestException ex, final WebRequest request) {
     ex.executeLogging();
-
+    Sentry.captureException(ex);
     return handleExceptionInternal(null, null, new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
   }
 }

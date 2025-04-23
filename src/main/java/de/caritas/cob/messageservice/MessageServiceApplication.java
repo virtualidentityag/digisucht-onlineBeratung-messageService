@@ -2,6 +2,7 @@ package de.caritas.cob.messageservice;
 
 import static java.util.Objects.nonNull;
 
+import io.sentry.spring.EnableSentry;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -25,6 +26,9 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import de.caritas.cob.messageservice.api.exception.KeycloakException;
 import de.caritas.cob.messageservice.api.helper.AuthenticatedUser;
 
+
+@EnableSentry(
+    dsn = "${onlineberatung.sentry.dsn}")
 @SpringBootApplication
 @EnableScheduling
 @EnableAsync
