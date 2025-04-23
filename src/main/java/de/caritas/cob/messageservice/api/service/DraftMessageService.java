@@ -12,8 +12,9 @@ import de.caritas.cob.messageservice.api.model.draftmessage.SavedDraftType;
 import de.caritas.cob.messageservice.api.model.draftmessage.entity.DraftMessage;
 import de.caritas.cob.messageservice.api.repository.DraftMessageRepository;
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -29,41 +30,37 @@ public class DraftMessageService {
   private final @NonNull DraftMessageRepository draftMessageRepository;
   private final @NonNull EncryptionService encryptionService;
   private final @NonNull AuthenticatedUser authenticatedUser;
+  private final Map<String, Object> locks = new ConcurrentHashMap<>();
 
   /**
    * Encrypts and saves a draft message. The message will be overwritten if a message for the given
    * user and rocket chat group id already exists.
    *
-   * @param message         the message to encrypt and persist
-   * @param rcGroupId       the rocket chat group id
-   * @param t               type of the message
+   * @param message   the message to encrypt and persist
+   * @param rcGroupId the rocket chat group id
+   * @param t         type of the message
    * @return a {@link SavedDraftType} for the created type
    */
-  public synchronized SavedDraftType saveDraftMessage(String message, String rcGroupId, String t) {
-
-    var optionalDraftMessage = findDraftMessage(rcGroupId);
-    var draftMessage = createOrUpdateDraftMessage(rcGroupId, t, optionalDraftMessage);
-    updateMessage(message, rcGroupId, draftMessage);
-    this.draftMessageRepository.save(draftMessage);
-
-    return extractSavedDraftType(optionalDraftMessage);
+  public SavedDraftType saveDraftMessage(String message, String rcGroupId, String t) {
+    String lockKey = createLockKey(rcGroupId);
+    locks.putIfAbsent(lockKey, new Object());
+    synchronized (locks.get(lockKey)) {
+      var optionalDraftMessage = findDraftMessage(rcGroupId);
+      var draftMessage = createOrUpdateDraftMessage(rcGroupId, t, optionalDraftMessage);
+      updateMessage(message, rcGroupId, draftMessage);
+      this.draftMessageRepository.save(draftMessage);
+      return extractSavedDraftType(optionalDraftMessage);
+    }
   }
 
   private DraftMessage createOrUpdateDraftMessage(String rcGroupId, String t,
       Optional<DraftMessage> optionalDraftMessage) {
-    var draftMessageRef = new AtomicReference<DraftMessage>();
-    optionalDraftMessage.ifPresentOrElse(
-        dm -> {
+    return optionalDraftMessage
+        .map(dm -> {
           dm.setT(t);
-          draftMessageRef.set(dm);
-        },
-        () -> {
-          var dm = buildNewDraftMessage(rcGroupId, t);
-          draftMessageRef.set(dm);
-        }
-    );
-
-    return draftMessageRef.get();
+          return dm;
+        })
+        .orElseGet(() -> buildNewDraftMessage(rcGroupId, t));
   }
 
   private Optional<DraftMessage> findDraftMessage(String rcGroupId) {
@@ -107,8 +104,12 @@ public class DraftMessageService {
    *
    * @param rcGroupId the rocket chat group id
    */
-  public synchronized void deleteDraftMessageIfExist(String rcGroupId) {
-    this.findDraftMessage(rcGroupId).ifPresent(this::deleteDraftMessage);
+  public void deleteDraftMessageIfExist(String rcGroupId) {
+    String lockKey = createLockKey(rcGroupId);
+    locks.putIfAbsent(lockKey, new Object());
+    synchronized (locks.get(lockKey)) {
+      this.findDraftMessage(rcGroupId).ifPresent(this::deleteDraftMessage);
+    }
   }
 
   private void deleteDraftMessage(DraftMessage draftMessage) {
@@ -149,6 +150,11 @@ public class DraftMessageService {
     } catch (CustomCryptoException e) {
       throw new InternalServerErrorException(e, LogService::logInternalServerError);
     }
+  }
+
+  private String createLockKey(String rcGroupId) {
+    String userId = this.authenticatedUser.getUserId();
+    return rcGroupId + "-" + userId;
   }
 
 }
