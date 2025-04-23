@@ -32,7 +32,7 @@ jobs:
           architecture: x64
 
       - name: Caching maven dependencies
-        uses: actions/cache@v1
+        uses: actions/cache@v4
         env:
           cache-name: cache-maven-dependencies
         with:
@@ -40,7 +40,7 @@ jobs:
           key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/pom.xml') }}
       - name: Maven Package
         run: mvn -B -Pprod  clean package -DskipTests
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
           name: targetfiles
           path: target/*.jar
@@ -71,7 +71,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download buildfiles artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: targetfiles
       - name: Get current time

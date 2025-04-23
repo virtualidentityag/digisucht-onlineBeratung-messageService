@@ -1,6 +1,7 @@
 package de.caritas.cob.messageservice.api;
 
 import de.caritas.cob.messageservice.api.service.LogService;
+import io.sentry.Sentry;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
@@ -8,7 +9,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
-import lombok.extern.slf4j.Slf4j;
 
 @ControllerAdvice
 @Order(Ordered.LOWEST_PRECEDENCE)
@@ -27,7 +27,7 @@ public class ApiDefaultResponseEntityExceptionHandler {
   public ResponseEntity<Object> handleInternal(final RuntimeException ex,
       final WebRequest request) {
     LogService.logInternalServerError(ex);
-
+    Sentry.captureException(ex);
     return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
   }
 }
