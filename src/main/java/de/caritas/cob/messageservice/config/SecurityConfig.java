@@ -9,6 +9,7 @@ import static de.caritas.cob.messageservice.api.authorization.Authority.Authorit
 import de.caritas.cob.messageservice.config.security.AuthorisationService;
 import de.caritas.cob.messageservice.config.security.JwtAuthConverter;
 import de.caritas.cob.messageservice.config.security.JwtAuthConverterProperties;
+import de.caritas.cob.messageservice.filter.PerformanceMonitoringFilter;
 import de.caritas.cob.messageservice.filter.StatelessCsrfFilter;
 import org.keycloak.adapters.springsecurity.KeycloakConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +51,9 @@ public class SecurityConfig implements WebMvcConfigurer {
   @Value("${csrf.whitelist.header.property}")
   private String csrfWhitelistHeaderProperty;
 
+  @Value("${sentry.peformance.monitoring.enabled:false}")
+  private boolean sentryPerformanceMonitoringEnabled;
+
 
   /**
    * Configure spring security filter chain: disable default Spring Boot CSRF token behavior and add
@@ -66,7 +70,9 @@ public class SecurityConfig implements WebMvcConfigurer {
     var httpSecurity = http.csrf(csrf -> csrf.disable())
         .addFilterBefore(new StatelessCsrfFilter(csrfCookieProperty, csrfHeaderProperty, csrfWhitelistHeaderProperty),
             CsrfFilter.class);
-
+    if (sentryPerformanceMonitoringEnabled) {
+      http.addFilterBefore(new PerformanceMonitoringFilter(), CsrfFilter.class);
+    }
 
     httpSecurity.sessionManagement(management -> management.sessionCreationPolicy(SessionCreationPolicy.STATELESS)).authorizeHttpRequests(requests -> requests
         .requestMatchers(SecurityConfig.WHITE_LIST).permitAll()
