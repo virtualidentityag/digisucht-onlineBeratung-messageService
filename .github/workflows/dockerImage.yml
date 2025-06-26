@@ -1,6 +1,7 @@
 name: Publish Docker image
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - 'release'
@@ -10,6 +11,7 @@ on:
     tags:
       - "dockerImage.v.*"
       - "v*"
+
 
 
 jobs:
