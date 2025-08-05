@@ -12,8 +12,6 @@ on:
       - "dockerImage.v.*"
       - "v*"
 
-
-
 jobs:
   test:
     name: Build and run unit tests
