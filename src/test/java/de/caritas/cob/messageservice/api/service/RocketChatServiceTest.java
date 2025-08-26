@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -39,6 +40,7 @@ import de.caritas.cob.messageservice.api.model.rocket.chat.message.MessagesDTO;
 import de.caritas.cob.messageservice.api.model.rocket.chat.message.SendMessageResponseDTO;
 import de.caritas.cob.messageservice.api.model.rocket.chat.message.SendMessageResultDTO;
 import de.caritas.cob.messageservice.api.service.helper.RocketChatCredentialsHelper;
+import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -112,18 +114,14 @@ public class RocketChatServiceTest {
   }
 
   @Test(expected = InternalServerErrorException.class)
-  public void getGroupMessages_Should_ThrowInternalServerErrorException_When_BuildMessageStreamUriFails()
-      throws NoSuchFieldException {
-
+  public void getGroupMessages_Should_ThrowInternalServerErrorException_When_BuildMessageStreamUriFails() {
     Whitebox.setInternalState(rocketChatService, "rcGetGroupMessageUrl", (Object[]) null);
     rocketChatService.getGroupMessages(RC_TOKEN, RC_USER_ID, RC_GROUP_ID, 0, 0, Instant.now());
   }
 
   @Test(expected = InternalServerErrorException.class)
-  public void getGroupMessages_Should_ThrowInternalServerErrorException_When_RocketChatRequestFails()
-      throws NoSuchFieldException {
+  public void getGroupMessages_Should_ThrowInternalServerErrorException_When_RocketChatRequestFails() {
     Whitebox.setInternalState(rocketChatService, "rcGetGroupMessageUrl",  "http://localhost/api/v1/groups.messages");
-
     HttpClientErrorException ex = new HttpClientErrorException(HttpStatus.BAD_REQUEST);
     when(restTemplate.exchange(any(), any(HttpMethod.class), any(),
         ArgumentMatchers.<Class<MessageStreamDTO>>any())).thenThrow(ex);
@@ -133,7 +131,7 @@ public class RocketChatServiceTest {
 
   @Test(expected = InternalServerErrorException.class)
   public void getGroupMessages_Should_ThrowInternalServerErrorException_When_DecryptionOfMessageFails()
-      throws NoSuchFieldException, CustomCryptoException {
+      throws CustomCryptoException {
     Whitebox.setInternalState(rocketChatService, "rcGetGroupMessageUrl",  "http://localhost/api/v1/groups.messages");
 
     EasyRandom easyRandom = new EasyRandom();
@@ -152,8 +150,7 @@ public class RocketChatServiceTest {
   }
 
   @Test
-  public void getGroupMessages_Should_ReturnMessageStreamDTO_When_ProvidedWithValidParameters()
-      throws NoSuchFieldException {
+  public void getGroupMessages_Should_ReturnMessageStreamDTO_When_ProvidedWithValidParameters() {
     Whitebox.setInternalState(rocketChatService, "rcGetGroupMessageUrl", "http://localhost/api/v1/groups.messages");
 
     List<MessagesDTO> messages = new ArrayList<>();
@@ -187,8 +184,7 @@ public class RocketChatServiceTest {
   }
 
   @Test
-  public void getGroupMessages_Should_SetForwardAsMessageType_ForForwardedMessages()
-      throws NoSuchFieldException {
+  public void getGroupMessages_Should_SetForwardAsMessageType_ForForwardedMessages() {
     Whitebox.setInternalState(rocketChatService, "rcGetGroupMessageUrl", "http://localhost/api/v1/groups.messages");
     EasyRandom easyRandom = new EasyRandom();
     MessageStreamDTO messageStreamDTO = easyRandom.nextObject(MessageStreamDTO.class);
@@ -199,9 +195,9 @@ public class RocketChatServiceTest {
 
     var mapper = new MessageMapper(null, null);
     messageStreamDTO.getMessages().forEach(messagesDTO -> {
-      when(messageMapper.typedMessageOf(eq(messagesDTO)))
+      when(messageMapper.typedMessageOf(messagesDTO))
             .thenReturn(messagesDTO);
-      when(messageMapper.messageTypeOf(eq(messagesDTO.getAlias())))
+      when(messageMapper.messageTypeOf(messagesDTO.getAlias()))
             .thenReturn(mapper.messageTypeOf(messagesDTO.getAlias()));
     });
 
@@ -217,9 +213,7 @@ public class RocketChatServiceTest {
   }
 
   @Test
-  public void getGroupMessages_Should_SetVideocallAsMessageType_ForVideocallMessages()
-      throws NoSuchFieldException {
-
+  public void getGroupMessages_Should_SetVideocallAsMessageType_ForVideocallMessages() {
     Whitebox.setInternalState(rocketChatService, "rcGetGroupMessageUrl", "http://localhost/api/v1/groups.messages");
     EasyRandom easyRandom = new EasyRandom();
     MessageStreamDTO messageStreamDTO = easyRandom.nextObject(MessageStreamDTO.class);
@@ -230,9 +224,9 @@ public class RocketChatServiceTest {
 
     var mapper = new MessageMapper(null, null);
     messageStreamDTO.getMessages().forEach(messagesDTO -> {
-      when(messageMapper.typedMessageOf(eq(messagesDTO)))
+      when(messageMapper.typedMessageOf(messagesDTO))
           .thenReturn(messagesDTO);
-      when(messageMapper.messageTypeOf(eq(messagesDTO.getAlias())))
+      when(messageMapper.messageTypeOf(messagesDTO.getAlias()))
           .thenReturn(mapper.messageTypeOf(messagesDTO.getAlias()));
     });
 
@@ -248,8 +242,7 @@ public class RocketChatServiceTest {
   }
 
   @Test
-  public void getGroupMessages_Should_SetFurtherStepsAsMessageType_ForFurtherStepsMessages()
-      throws NoSuchFieldException {
+  public void getGroupMessages_Should_SetFurtherStepsAsMessageType_ForFurtherStepsMessages() {
     Whitebox.setInternalState(rocketChatService, "rcGetGroupMessageUrl", "http://localhost/api/v1/groups.messages");
     EasyRandom easyRandom = new EasyRandom();
     MessageStreamDTO messageStreamDTO = easyRandom.nextObject(MessageStreamDTO.class);
@@ -261,9 +254,9 @@ public class RocketChatServiceTest {
 
     var mapper = new MessageMapper(null, null);
     messageStreamDTO.getMessages().forEach(messagesDTO -> {
-      when(messageMapper.typedMessageOf(eq(messagesDTO)))
+      when(messageMapper.typedMessageOf(messagesDTO))
           .thenReturn(messagesDTO);
-      when(messageMapper.messageTypeOf(eq(messagesDTO.getAlias())))
+      when(messageMapper.messageTypeOf(messagesDTO.getAlias()))
           .thenReturn(mapper.messageTypeOf(messagesDTO.getAlias()));
     });
 
@@ -294,8 +287,9 @@ public class RocketChatServiceTest {
     when(encryptionService.encrypt(ArgumentMatchers.anyString(), ArgumentMatchers.anyString()))
         .thenReturn(RC_MESSAGE);
 
+    var message = createGroupMessage();
     try {
-      rocketChatService.postGroupMessage(createGroupMessage());
+      rocketChatService.postGroupMessage(message);
       fail("Expected exception: InternalServerErrorException");
     } catch (InternalServerErrorException internalServerErrorException) {
       assertTrue("Expected InternalServerErrorException thrown", true);
@@ -425,5 +419,41 @@ public class RocketChatServiceTest {
         .thenThrow(new CustomCryptoException(new Exception()));
 
     this.rocketChatService.postAliasOnlyMessageAsSystemUser(RC_GROUP_ID, aliasMessageDTO);
+  }
+
+  @Test
+  public void obtainMessageStream_Should_ThrowInternalServerErrorException_When_HttpClientErrorOccurs() {
+    URI uri = URI.create("http://localhost/api/v1/groups.messages");
+
+    HttpClientErrorException ex = new HttpClientErrorException(HttpStatus.BAD_REQUEST);
+    when(restTemplate.exchange(eq(uri), eq(HttpMethod.GET), any(HttpEntity.class),
+        eq(MessageStreamDTO.class))).thenThrow(ex);
+
+    assertThrows(InternalServerErrorException.class, () ->
+        rocketChatService.obtainMessageStream(RC_TOKEN, RC_USER_ID, uri));
+  }
+
+  @Test
+  public void obtainMessageStream_Should_ThrowInternalServerErrorException_When_RestClientExceptionOccurs() {
+    URI uri = URI.create("http://localhost/api/v1/groups.messages");
+
+    RestClientException ex = new RestClientException("Rest client issue");
+    when(restTemplate.exchange(eq(uri), eq(HttpMethod.GET), any(HttpEntity.class),
+        eq(MessageStreamDTO.class))).thenThrow(ex);
+
+    assertThrows(InternalServerErrorException.class, () ->
+        rocketChatService.obtainMessageStream(RC_TOKEN, RC_USER_ID, uri));
+  }
+
+  @Test
+  public void obtainMessageStream_Should_ThrowInternalServerErrorException_When_UnexpectedExceptionOccurs() {
+    URI uri = URI.create("http://localhost/api/v1/groups.messages");
+
+    RuntimeException ex = new RuntimeException("Unexpected issue");
+    when(restTemplate.exchange(eq(uri), eq(HttpMethod.GET), any(HttpEntity.class),
+        eq(MessageStreamDTO.class))).thenThrow(ex);
+
+    assertThrows(InternalServerErrorException.class, () ->
+        rocketChatService.obtainMessageStream(RC_TOKEN, RC_USER_ID, uri));
   }
 }
